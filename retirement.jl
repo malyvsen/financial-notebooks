@@ -151,8 +151,9 @@ end
 
 # ╔═╡ 00b3aac6-4468-11eb-073d-9b52308d3240
 function apply_pit(income)
-	first_tier_tax = min(income, pit_tier_border) * pit_first_percent / 100
-	second_tier_tax = max(income - pit_tier_border, 0) * pit_second_percent / 100
+	actual_tier_border = pit_tier_border * num_people
+	first_tier_tax = min(income, actual_tier_border) * pit_first_percent / 100
+	second_tier_tax = max(income - actual_tier_border, 0) * pit_second_percent / 100
 	return income - first_tier_tax - second_tier_tax
 end
 
