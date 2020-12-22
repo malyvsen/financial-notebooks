@@ -337,7 +337,7 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╟─3ca08438-43e0-11eb-004f-17a75401c481
 # ╟─5bb7fcfc-43e5-11eb-0f55-c9bdd6557449
 # ╟─6879734c-4397-11eb-20b1-c521c4d1dbbf
-# ╠═2fee2ecc-43de-11eb-0168-2943ab290ff0
+# ╟─2fee2ecc-43de-11eb-0168-2943ab290ff0
 # ╟─ea083430-43df-11eb-10a8-0d3e898644f8
 # ╟─b4308f9a-43ef-11eb-244f-75e1e3b1851a
 # ╟─9eb214ce-43dc-11eb-29a4-2712e312f969
