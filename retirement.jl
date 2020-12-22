@@ -16,6 +16,7 @@ end
 # ╔═╡ c27386f4-4393-11eb-1fb2-43bf6a1d7de0
 begin
 	using Distributions
+	using Interpolations
 	using Statistics
 	using StatsPlots
 	gr(fmt=:png) # forces sensible plot size
@@ -27,17 +28,17 @@ end
 md"# Oszczędzanie
 Na celowniku: godna emerytura."
 
-# ╔═╡ 4dcb250c-4394-11eb-2f24-9f3f5aec7f10
-md"Mamy $(@bind num_people NumberField(1:5, default=2)) osoby wspólnie oszczędzające na emeryturę."
+# ╔═╡ 12dca160-44a1-11eb-1950-b3a0b9f380a3
+md"Jesteś $(@bind sex_pl Select([\"mężczyzną\", \"kobietą\"])) w wieku $(@bind current_age NumberField(0:100, default=20)) lat."
 
 # ╔═╡ 0dda613c-4395-11eb-2c8e-ff08529d84e8
-md"Planujecie przejść na emeryturę za $(@bind years_to_retirement NumberField(0:50, default=20)) lat, a na emeryturze spodziewacie się przeżyć $(@bind years_after_retirement NumberField(0:100, default=20)) lat."
+md"Planujesz przejść na emeryturę w wieku $(@bind age_at_retirement NumberField(0:100, default=65)) lat."
 
 # ╔═╡ 5e700f84-4395-11eb-0728-f9c7a615f399
-md"Obecnie macie zaoszczędzonych PLN $(@bind initial_investment NumberField(0:1e7, default=Int(200e3)))."
+md"Obecnie masz zaoszczędzonych PLN $(@bind initial_investment NumberField(0:1e7, default=Int(100e3)))."
 
 # ╔═╡ c2ed1baa-4395-11eb-2391-b9155da66af2
-md"Wasze miesięczne płace, przed podatkiem, dają razem PLN $(@bind monthly_revenue NumberField(0:1e5, default=Int(10e3))), z których wydajecie PLN $(@bind monthly_cost NumberField(0:1e5, default=Int(5e3))) w przeciętnym miesiącu."
+md"Miesięczna kwota, którą otrzymujesz od pracodawcy (przed PIT, ale po składkach na ZUS), to PLN $(@bind monthly_revenue NumberField(0:1e5, default=Int(10e3))), z których wydajesz PLN $(@bind monthly_cost NumberField(0:1e5, default=Int(5e3))) w przeciętnym miesiącu."
 
 # ╔═╡ c4470892-4397-11eb-305d-c3fe29382c16
 md"""
@@ -45,10 +46,10 @@ md"""
 """
 
 # ╔═╡ cfc9b566-4397-11eb-231c-37c0da3c3da2
-md"Zakładamy inflację równą $(@bind yearly_inflation_percent NumberField(0:0.1:10, default=2.5))%."
+md"Docelowa wartość inflacji NBP wynosi $(@bind yearly_inflation_percent NumberField(0:0.1:10, default=2.5))%."
 
 # ╔═╡ 7711e8d8-43d0-11eb-01fd-8faca7a26c5d
-md"Średnia roczna stopa zwrotu globalnego rynku, wynosi $(@bind market_real_return_percent NumberField(0:0.1:100, default=4.3))% po korekcie na inflację, a odchylenie standardowe wynosi $(@bind market_stddev_percent NumberField(0:0.1:100, default=15))%."
+md"Średnia roczna stopa zwrotu globalnego rynku wynosi $(@bind market_real_return_percent NumberField(0:0.1:100, default=4.3))% po korekcie na inflację, a odchylenie standardowe wynosi $(@bind market_stddev_percent NumberField(0:0.1:100, default=15))%."
 
 # ╔═╡ fb8df1d8-43d0-11eb-1cd0-655f5240b570
 md"""
@@ -62,7 +63,7 @@ begin
 end
 
 # ╔═╡ 2896e0a6-4398-11eb-07dd-e5c27ac014a7
-md"Stawka PIT wynosi $(@bind pit_first_percent NumberField(0:0.1:100, default=17))% w pierwszym progu i $(@bind pit_second_percent NumberField(0:0.1:100, default=32))% w drugim. Kwota graniczna to PLN $(@bind pit_tier_border NumberField(0:1e6, default=85528))."
+md"Stawka PIT wynosi $(@bind pit_first_percent NumberField(0:0.1:100, default=17))% w pierwszym progu i $(@bind pit_second_percent NumberField(0:0.1:100, default=32))% w drugim. Kwota graniczna to PLN $(@bind pit_bracket_border NumberField(0:1e6, default=85528))."
 
 # ╔═╡ d7496936-4468-11eb-0247-579dfe77adb0
 md"""
@@ -75,41 +76,39 @@ md"""
 """
 
 # ╔═╡ 3ca08438-43e0-11eb-004f-17a75401c481
-md"Wasze obecne oszczędności zainwestujecie w: `obligacje` $(@bind initial_etf_allocation Slider(0:0.1:1, default=0.5)) `ETFy`"
+md"Swoje obecne oszczędności zainwestujesz w: `obligacje` $(@bind initial_etf_allocation Slider(0:0.1:1, default=0.5)) `ETFy`"
 
 # ╔═╡ 6879734c-4397-11eb-20b1-c521c4d1dbbf
 md"""
 ### IKE
-IKE to rachunek oszczędnościowy, który pozwala nie płacić podatku Belki, jeśli wyciąga się z niego pieniądze dopiero po 60ce. Maksymalna kwota, którą można wpłacić na IKE w ciągu jednego roku, wynosi PLN $(@bind ike_yearly_limit NumberField(0:1e5, default=15681)) - przy czym każde z was może mieć jedno IKE.
+IKE to rachunek oszczędnościowy, który pozwala nie płacić podatku Belki, jeśli wyciąga się z niego pieniądze dopiero po 60ce. Maksymalna kwota, którą można wpłacić na IKE w ciągu jednego roku, wynosi PLN $(@bind ike_yearly_limit NumberField(0:1e5, default=15681)).
 """
 
 # ╔═╡ 2fee2ecc-43de-11eb-0168-2943ab290ff0
 begin
-	ike_cumulative_yearly_limit = ike_yearly_limit * num_people
 	md"""
-Licząc razem, będziecie wpłacać na swoje IKE PLN $(@bind ike_yearly NumberField(0:0.01:ike_cumulative_yearly_limit, default=15000)) w ciągu roku, a limit prawny wynosi PLN $ike_cumulative_yearly_limit.
+W przeciętnym roku zamierzasz wpłacać na swoje IKE PLN $(@bind ike_yearly NumberField(0:0.01:ike_yearly_limit, default=1000)).
 	"""
 end
 
 # ╔═╡ ea083430-43df-11eb-10a8-0d3e898644f8
-md"Środki na IKE zainwestujecie w: `obligacje` $(@bind ike_etf_allocation Slider(0:0.1:1, default=0.5)) `ETFy`"
+md"Środki na IKE zainwestujesz w: `obligacje` $(@bind ike_etf_allocation Slider(0:0.1:1, default=0.5)) `ETFy`"
 
 # ╔═╡ 9eb214ce-43dc-11eb-29a4-2712e312f969
 md"""
 ### IKZE
-IKZE to rachunek oszczędnościowy, który pozwala nam odliczyć kwotę wpłaconą na niego od swoich zarobków na potrzeby PIT. Wyciągnięcie pieniędzy z IKZE może nastąpić w wieku lat 65. Całość wypłaty podlega wtedy opodatkowaniu w wyskości $(@bind ikze_tax_percent NumberField(0:0.1:100, default=10))%. Na IKZE można maksymalnie wpłacać PLN $(@bind ikze_yearly_limit NumberField(0:1e5, default=6272.4)) w ciągu roku - przy czym, tak jak w wypadku IKE, każde z was może prowadzić jedno IKZE.
+IKZE to rachunek oszczędnościowy, który pozwala odliczyć kwotę wpłaconą na niego od swoich zarobków na potrzeby PIT. Wyciągnięcie pieniędzy z IKZE może nastąpić w wieku lat 65. Całość wypłaty podlega wtedy opodatkowaniu w wyskości $(@bind ikze_tax_percent NumberField(0:0.1:100, default=10))%. Na IKZE można maksymalnie wpłacać PLN $(@bind ikze_yearly_limit NumberField(0:1e5, default=6272.4)) w ciągu roku.
 """
 
 # ╔═╡ b3a46636-43df-11eb-233b-3d178928ffe6
 begin
-	ikze_cumulative_yearly_limit = ikze_yearly_limit * num_people
 	md"""
-Licząc razem, będziecie wpłacać na swoje IKZE PLN $(@bind ikze_yearly NumberField(0:0.01:ikze_cumulative_yearly_limit, default=Int(10e3))) w ciągu roku, a limit prawny wynosi PLN $ikze_cumulative_yearly_limit.
+W przeciętnym roku zamierzasz wpłacać na swoje IKZE PLN $(@bind ikze_yearly NumberField(0:0.01:ikze_yearly_limit, default=1000)).
 	"""
 end
 
 # ╔═╡ 16ba6086-43e0-11eb-280b-232a403709bb
-md"Środki na IKZE zainwestujecie w: `obligacje` $(@bind ikze_etf_allocation Slider(0:0.1:1, default=0.5)) `ETFy`"
+md"Środki na IKZE zainwestujesz w: `obligacje` $(@bind ikze_etf_allocation Slider(0:0.1:1, default=0.5)) `ETFy`"
 
 # ╔═╡ 32f6e32a-43e3-11eb-14e5-c9a22c45ca46
 md"## Wyniki"
@@ -136,32 +135,68 @@ end
 
 # ╔═╡ 64441bb6-4396-11eb-34e7-49024ebb7bb1
 if monthly_cost > monthly_revenue
-	md"Miesięczne wydatki przekraczają miesięczne dochody. Mam nadzieję, że to nieprawda?"
+	md"#### 🚨 Miesięczne wydatki przekraczają miesięczne dochody. Mam nadzieję, że to nieprawda?"
 else
 	yearly_revenue = monthly_revenue * 12
 	yearly_cost = monthly_cost * 12
-	md"To oznacza, że wydajecie $(Int(round(monthly_cost / monthly_revenue * 100)))% swoich zarobków w przeciętnym miesiącu. Te wartości przeliczają się na roczny przychód w wysokości PLN $(display_money(yearly_revenue)) i roczne wydatki w wysokości PLN $(display_money(yearly_cost))."
+	md"To oznacza, że wydajesz $(Int(round(monthly_cost / monthly_revenue * 100)))% swoich zarobków w przeciętnym miesiącu. Te wartości przeliczają się na roczny przychód w wysokości PLN $(display_money(yearly_revenue)) i roczne wydatki w wysokości PLN $(display_money(yearly_cost))."
+end
+
+# ╔═╡ 48c32c58-44a0-11eb-3cf4-6d11bebf21e0
+function life_expectancy(; age, sex)
+	known_ages = 0:15:75
+	male_life_expectancies = known_ages .+ [74.1, 59.5, 45.1, 31.3, 19.3, 10.2]
+	female_life_expectancies = known_ages .+ [81.8, 67.2, 52.4, 37.8, 24.2, 12.6]
+	if sex == "male"
+		CubicSplineInterpolation(known_ages, male_life_expectancies)(age)
+	elseif sex == "female"
+		CubicSplineInterpolation(known_ages, female_life_expectancies)(age)
+	else
+		throw("Unknown gender")
+	end
+end
+
+# ╔═╡ 58c7e838-44a1-11eb-1906-ddf46510ff27
+begin
+	sex = if sex_pl == "mężczyzną" "male" else "female" end
+	expected_death_age = life_expectancy(age=current_age, sex=sex)
+	md"W takim razie, według GUS, spodziewasz się dożyć wieku lat $(Int(round(expected_death_age)))."
+end
+
+# ╔═╡ cf2e6344-44a1-11eb-30f3-230d34760865
+begin
+	years_to_retirement = age_at_retirement - current_age
+	years_after_retirement = expected_death_age - age_at_retirement
+	md"Masz więc przed sobą $(Int(round(years_to_retirement))) lat pracy, a na emeryturze spodziewasz się pożyć $(Int(round(years_after_retirement))) lat."
 end
 
 # ╔═╡ 8c8a52d2-4398-11eb-0549-493b3968b3b7
 begin
 	inflation_at_retirement = (1 + yearly_inflation_percent / 100) .^ years_to_retirement
-	md"To oznacza, że za $(years_to_retirement) lat będziecie potrzebować PLN $(display_money(monthly_cost * inflation_at_retirement)), aby utrzymać obecny styl życia, ponieważ PLN 1 będzie wart tyle, co PLN $(round(1 / inflation_at_retirement, digits=2)) obecnie."
+	md"To oznacza, że za $(years_to_retirement) lat będziesz potrzebować PLN $(display_money(monthly_cost * inflation_at_retirement)), aby utrzymać obecny styl życia, ponieważ PLN 1 będzie wart tyle, co PLN $(round(1 / inflation_at_retirement, digits=2)) obecnie."
+end
+
+# ╔═╡ c12bae28-449c-11eb-227c-03c3adef27c8
+begin
+	test_ages = 0:75
+	plot(title="Life expectancy test")
+	plot!(test_ages, life_expectancy.(age=test_ages, sex="male"), label="male")
+	plot!(test_ages, life_expectancy.(age=test_ages, sex="female"), label="female")
 end
 
 # ╔═╡ 00b3aac6-4468-11eb-073d-9b52308d3240
 function apply_pit(income)
-	actual_tier_border = pit_tier_border * num_people
-	first_tier_tax = min(income, actual_tier_border) * pit_first_percent / 100
-	second_tier_tax = max(income - actual_tier_border, 0) * pit_second_percent / 100
-	return income - first_tier_tax - second_tier_tax
+	first_bracket_tax = min(income, pit_bracket_border) * pit_first_percent / 100
+	second_bracket_tax = max(income - pit_bracket_border, 0) * pit_second_percent / 100
+	return income - first_bracket_tax - second_bracket_tax
 end
 
 # ╔═╡ bd353520-4396-11eb-1250-2f5bbbca4582
 begin
 	current_yearly_tax = yearly_revenue - apply_pit(yearly_revenue)
 	current_yearly_profit = apply_pit(yearly_revenue) - yearly_cost
-	md"To oznacza, że co roku płacicie PIT w wysokości PLN $(display_money(current_yearly_tax)), co pozostawia PLN $(display_money(current_yearly_profit)) w formie oszczędności."
+	tax_bracket_message = if yearly_revenue > pit_bracket_border "wpadasz" else "nie wpadasz" end
+	md"To oznacza, że $(tax_bracket_message) w drugi próg podatkowy, i co roku płacisz PIT w wysokości PLN $(display_money(current_yearly_tax)), co pozostawia PLN $(display_money(current_yearly_profit)) w formie oszczędności."
 end
 
 # ╔═╡ 002bc00c-43e1-11eb-0dad-c9e4ca4ca2f5
@@ -169,16 +204,16 @@ begin
 	post_ikze_revenue = yearly_revenue - ikze_yearly
 	post_ikze_yearly_tax = post_ikze_revenue - apply_pit(post_ikze_revenue)
 	post_ikze_yearly_profit = apply_pit(yearly_revenue - ikze_yearly) - yearly_cost
-	md"To zmniejszy wasz roczny PIT o PLN $(display_money(current_yearly_tax - post_ikze_yearly_tax)), do wartości PLN $(display_money(post_ikze_yearly_tax))."
+	md"To zmniejszy Twój roczny PIT o PLN $(display_money(current_yearly_tax - post_ikze_yearly_tax)), do wartości PLN $(display_money(post_ikze_yearly_tax))."
 end
 
 # ╔═╡ eaa4fd02-43e0-11eb-1fe6-03f1d6b2bffb
 begin
 	yearly_unused = post_ikze_yearly_profit - ike_yearly - ikze_yearly
 	if yearly_unused < 0
-		md"Łączna kwota wpłacana na IKE i IKZE przekraczą kwotę przychodu - PLN $(Int(round(post_ikze_yearly_profit))). Musicie wpłacać PLN $(Int(round(-yearly_unused))) mniej na te rachunki."
+		md"#### 🚨 Łączna kwota wpłacana na IKE i IKZE przekracza kwotę przychodu - PLN $(Int(round(post_ikze_yearly_profit))). Zmniejsz kwotę wpłacaną na te rachunki o PLN $(Int(round(-yearly_unused)))."
 	else
-		md"Po wpłacie na IKE oraz IKZE pozostaje wam co roku PLN $(Int(round(yearly_unused))) na nieprzewidziane wydatki."
+		md"Po wpłacie na IKE oraz IKZE pozostaje Ci co roku PLN $(Int(round(yearly_unused))), które zostawiasz na koncie w banku."
 	end
 end
 
@@ -318,8 +353,10 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 
 # ╔═╡ Cell order:
 # ╟─2c367f68-4394-11eb-1098-23e08449a7dd
-# ╟─4dcb250c-4394-11eb-2f24-9f3f5aec7f10
+# ╟─12dca160-44a1-11eb-1950-b3a0b9f380a3
+# ╟─58c7e838-44a1-11eb-1906-ddf46510ff27
 # ╟─0dda613c-4395-11eb-2c8e-ff08529d84e8
+# ╟─cf2e6344-44a1-11eb-30f3-230d34760865
 # ╟─5e700f84-4395-11eb-0728-f9c7a615f399
 # ╟─c2ed1baa-4395-11eb-2391-b9155da66af2
 # ╟─64441bb6-4396-11eb-34e7-49024ebb7bb1
@@ -354,6 +391,8 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╠═1cc75e60-4454-11eb-0cbf-bf4345f74eb5
 # ╠═1ccb3f4e-4454-11eb-2454-4378dd84a438
 # ╠═1ccbe7e6-4454-11eb-3d5f-13c7f8ed6c89
+# ╠═c12bae28-449c-11eb-227c-03c3adef27c8
+# ╠═48c32c58-44a0-11eb-3cf4-6d11bebf21e0
 # ╠═ac52378a-4468-11eb-17ef-530a18afa526
 # ╠═295801a8-4469-11eb-0c9d-f149f78e3aa3
 # ╠═00b3aac6-4468-11eb-073d-9b52308d3240
