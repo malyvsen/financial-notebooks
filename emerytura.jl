@@ -206,8 +206,8 @@ end
 function wealth_plot(samples; title)
 	wealth_distribution = mle_returns_distribution(samples)
 	plot(title=title, xformatter=display_money)
-	plot!(wealth_distribution / inflation_at_retirement, func=cdf, label="Real")
-	plot!(wealth_distribution, func=cdf, label="Nominal")
+	plot!(wealth_distribution / inflation_at_retirement, func=cdf, label="Realna")
+	plot!(wealth_distribution, func=cdf, label="Nominalna")
 end
 
 # ╔═╡ 2ca0bbda-43d8-11eb-18c3-93c9a3b46e70
@@ -249,7 +249,7 @@ begin
 			.+ initial_etf_allocation .* sample_etfs(initial_incomes)
 		)
 	)
-	wealth_plot(initial_samples, title="Initial investment value at retirement")
+	wealth_plot(initial_samples, title="Wartość obecnych oszczędności na początku emerytury")
 end
 
 # ╔═╡ b4308f9a-43ef-11eb-244f-75e1e3b1851a
