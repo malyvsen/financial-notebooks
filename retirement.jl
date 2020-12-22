@@ -35,10 +35,10 @@ md"Jesteś $(@bind sex_pl Select([\"mężczyzną\", \"kobietą\"])) w wieku $(@b
 md"Planujesz przejść na emeryturę w wieku $(@bind age_at_retirement NumberField(0:100, default=65)) lat."
 
 # ╔═╡ 5e700f84-4395-11eb-0728-f9c7a615f399
-md"Obecnie masz zaoszczędzonych PLN $(@bind initial_investment NumberField(0:1e7, default=Int(100e3)))."
+md"Obecnie masz zaoszczędzonych PLN $(@bind initial_investment NumberField(0:1e7, default=Int(5e3)))."
 
 # ╔═╡ c2ed1baa-4395-11eb-2391-b9155da66af2
-md"Miesięczna kwota, którą otrzymujesz od pracodawcy (przed PIT, ale po składkach na ZUS), to PLN $(@bind monthly_revenue NumberField(0:1e5, default=Int(10e3))), z których wydajesz PLN $(@bind monthly_cost NumberField(0:1e5, default=Int(5e3))) w przeciętnym miesiącu."
+md"Miesięczna kwota, którą otrzymujesz od pracodawcy (przed PIT, ale po składkach na ZUS), to PLN $(@bind monthly_revenue NumberField(0:1e5, default=Int(3e3))), z których wydajesz PLN $(@bind monthly_cost NumberField(0:1e5, default=Int(2e3))) w przeciętnym miesiącu."
 
 # ╔═╡ c4470892-4397-11eb-305d-c3fe29382c16
 md"""
@@ -179,7 +179,7 @@ begin
 	inflation_at_retirement = last(inflation_progress)
 	yearly_revenues = current_yearly_revenue .* inflation_progress
 	yearly_costs = current_yearly_cost .* inflation_progress
-	md"To oznacza, że za $(years_to_retirement) lat będziesz potrzebować PLN $(display_money(monthly_cost * inflation_at_retirement)), aby utrzymać obecny styl życia, ponieważ PLN 1 będzie wart tyle, co PLN $(round(1 / inflation_at_retirement, digits=2)) obecnie. Zakładamy, że Twoje zarobki również będą skalować się z inflacją, czyli tuż przed emeryturą będziesz zarabiać PLN $(display_money(monthly_revenue * inflation_at_retirement))."
+	md"To oznacza, że za $(years_to_retirement) lat będziesz potrzebować PLN $(display_money(monthly_cost * inflation_at_retirement)), aby utrzymać obecny styl życia, ponieważ PLN 1 będzie wart tyle, co PLN $(round(1 / inflation_at_retirement, digits=2)) obecnie. Ponieważ Twoje zarobki również będą skalować się z inflacją, to tuż przed emeryturą będziesz zarabiać PLN $(display_money(monthly_revenue * inflation_at_retirement))."
 end
 
 # ╔═╡ c6e26108-44a7-11eb-1350-a169fbac1b06
