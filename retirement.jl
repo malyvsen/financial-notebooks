@@ -111,7 +111,10 @@ end
 md"Środki na IKZE zainwestujesz w: `obligacje` $(@bind ikze_etf_allocation Slider(0:0.1:1, default=0.5)) `ETFy`"
 
 # ╔═╡ 32f6e32a-43e3-11eb-14e5-c9a22c45ca46
-md"## Wyniki"
+md"## Emerytura"
+
+# ╔═╡ c1f30f50-44aa-11eb-28c0-a3d329b9947d
+md"Będąc na emeryturze ulokujesz te pieniądze w: `obligacje` $(@bind retirement_etf_allocation Slider(0:0.1:1, default=0)) `ETFy`"
 
 # ╔═╡ 27cd099c-4394-11eb-0cc0-eb21f9c082c5
 md"## Technikalia"
@@ -355,9 +358,13 @@ begin
 	wealth_plot(overall_samples, title="Wartość majątku na początku emerytury")
 end
 
-# ╔═╡ 28920e72-4448-11eb-31d8-a793fe2aaccd
+# ╔═╡ d70da254-44ac-11eb-1db0-0f242bcc37ae
 begin
-	overall_monthly_retirement_samples = overall_samples / years_after_retirement / 12
+	# uses 3% rule as per https://bestinterest.blog/updated-trinity-study-simulation/
+	overall_monthly_retirement_samples = (
+		(1 - retirement_etf_allocation) * (overall_samples / years_after_retirement)
+		+ retirement_etf_allocation * .03 * overall_samples
+	) / 12
 	wealth_plot(overall_monthly_retirement_samples, title="Dodatkowa miesięczna emerytura (z podziału majątku)")
 end
 
@@ -400,7 +407,8 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╟─eaa4fd02-43e0-11eb-1fe6-03f1d6b2bffb
 # ╟─32f6e32a-43e3-11eb-14e5-c9a22c45ca46
 # ╟─48ed7d74-43e3-11eb-0976-c52b73747a52
-# ╟─28920e72-4448-11eb-31d8-a793fe2aaccd
+# ╟─c1f30f50-44aa-11eb-28c0-a3d329b9947d
+# ╟─d70da254-44ac-11eb-1db0-0f242bcc37ae
 # ╟─27cd099c-4394-11eb-0cc0-eb21f9c082c5
 # ╠═1cc75e60-4454-11eb-0cbf-bf4345f74eb5
 # ╠═1ccb3f4e-4454-11eb-2454-4378dd84a438
