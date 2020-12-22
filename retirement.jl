@@ -62,7 +62,12 @@ begin
 end
 
 # ╔═╡ 2896e0a6-4398-11eb-07dd-e5c27ac014a7
-md"Stawka PIT wynosi $(@bind personal_income_tax_percent NumberField(0:0.1:100, default=17))%, a podatek Belki - $(@bind capital_gains_tax_percent NumberField(0:0.1:100, default=19))%."
+md"Stawka PIT wynosi $(@bind pit_first_percent NumberField(0:0.1:100, default=17))% w pierwszym progu i $(@bind pit_second_percent NumberField(0:0.1:100, default=32))% w drugim. Kwota graniczna to PLN $(@bind pit_tier_border NumberField(0:1e6, default=85528))."
+
+# ╔═╡ d7496936-4468-11eb-0247-579dfe77adb0
+md"""
+Podatek Belki wynosi $(@bind capital_gains_tax_percent NumberField(0:0.1:100, default=19))%.
+"""
 
 # ╔═╡ 3a29e51c-4397-11eb-35e6-7bef72a87db9
 md"""
@@ -82,7 +87,7 @@ IKE to rachunek oszczędnościowy, który pozwala nie płacić podatku Belki, je
 begin
 	ike_cumulative_yearly_limit = ike_yearly_limit * num_people
 	md"""
-Licząc razem, będziecie wpłacać na swoje IKE PLN $(@bind ike_yearly NumberField(0:0.01:ike_cumulative_yearly_limit, default=ike_cumulative_yearly_limit)) w ciągu roku, a limit prawny wynosi PLN $ike_cumulative_yearly_limit.
+Licząc razem, będziecie wpłacać na swoje IKE PLN $(@bind ike_yearly NumberField(0:0.01:ike_cumulative_yearly_limit, default=15000)) w ciągu roku, a limit prawny wynosi PLN $ike_cumulative_yearly_limit.
 	"""
 end
 
@@ -99,7 +104,7 @@ IKZE to rachunek oszczędnościowy, który pozwala nam odliczyć kwotę wpłacon
 begin
 	ikze_cumulative_yearly_limit = ikze_yearly_limit * num_people
 	md"""
-Licząc razem, będziecie wpłacać na swoje IKZE PLN $(@bind ikze_yearly NumberField(0:0.01:ikze_cumulative_yearly_limit, default=Int(5e3))) w ciągu roku, a limit prawny wynosi PLN $ikze_cumulative_yearly_limit.
+Licząc razem, będziecie wpłacać na swoje IKZE PLN $(@bind ikze_yearly NumberField(0:0.01:ikze_cumulative_yearly_limit, default=Int(10e3))) w ciągu roku, a limit prawny wynosi PLN $ikze_cumulative_yearly_limit.
 	"""
 end
 
@@ -144,17 +149,25 @@ begin
 	md"To oznacza, że za $(years_to_retirement) lat będziecie potrzebować PLN $(display_money(monthly_cost * inflation_at_retirement)), aby utrzymać obecny styl życia, ponieważ PLN 1 będzie wart tyle, co PLN $(round(1 / inflation_at_retirement, digits=2)) obecnie."
 end
 
+# ╔═╡ 00b3aac6-4468-11eb-073d-9b52308d3240
+function apply_pit(income)
+	first_tier_tax = min(income, pit_tier_border) * pit_first_percent / 100
+	second_tier_tax = max(income - pit_tier_border, 0) * pit_second_percent / 100
+	return income - first_tier_tax - second_tier_tax
+end
+
 # ╔═╡ bd353520-4396-11eb-1250-2f5bbbca4582
 begin
-	current_yearly_tax = yearly_revenue * personal_income_tax_percent / 100
-	current_yearly_profit = yearly_revenue - yearly_cost - current_yearly_tax
+	current_yearly_tax = yearly_revenue - apply_pit(yearly_revenue)
+	current_yearly_profit = apply_pit(yearly_revenue) - yearly_cost
 	md"To oznacza, że co roku płacicie PIT w wysokości PLN $(display_money(current_yearly_tax)), co pozostawia PLN $(display_money(current_yearly_profit)) w formie oszczędności."
 end
 
 # ╔═╡ 002bc00c-43e1-11eb-0dad-c9e4ca4ca2f5
 begin
-	post_ikze_yearly_tax = (yearly_revenue - ikze_yearly) * personal_income_tax_percent / 100
-	post_ikze_yearly_profit = yearly_revenue - yearly_cost - post_ikze_yearly_tax
+	post_ikze_revenue = yearly_revenue - ikze_yearly
+	post_ikze_yearly_tax = post_ikze_revenue - apply_pit(post_ikze_revenue)
+	post_ikze_yearly_profit = apply_pit(yearly_revenue - ikze_yearly) - yearly_cost
 	md"To zmniejszy wasz roczny PIT o PLN $(display_money(current_yearly_tax - post_ikze_yearly_tax)), do wartości PLN $(display_money(post_ikze_yearly_tax))."
 end
 
@@ -167,6 +180,12 @@ begin
 		md"Po wpłacie na IKE oraz IKZE pozostaje wam co roku PLN $(Int(round(yearly_unused))) na nieprzewidziane wydatki."
 	end
 end
+
+# ╔═╡ ac52378a-4468-11eb-17ef-530a18afa526
+apply_pit(10e3)
+
+# ╔═╡ 295801a8-4469-11eb-0c9d-f149f78e3aa3
+apply_pit(1e10)
 
 # ╔═╡ 1cde325c-4454-11eb-33dc-afd84672f28d
 function apply_capital_gains_tax(; incomes, samples)
@@ -313,11 +332,12 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╟─8cfda320-43e5-11eb-1d02-d5d21784a008
 # ╟─2896e0a6-4398-11eb-07dd-e5c27ac014a7
 # ╟─bd353520-4396-11eb-1250-2f5bbbca4582
+# ╟─d7496936-4468-11eb-0247-579dfe77adb0
 # ╟─3a29e51c-4397-11eb-35e6-7bef72a87db9
 # ╟─3ca08438-43e0-11eb-004f-17a75401c481
 # ╟─5bb7fcfc-43e5-11eb-0f55-c9bdd6557449
 # ╟─6879734c-4397-11eb-20b1-c521c4d1dbbf
-# ╟─2fee2ecc-43de-11eb-0168-2943ab290ff0
+# ╠═2fee2ecc-43de-11eb-0168-2943ab290ff0
 # ╟─ea083430-43df-11eb-10a8-0d3e898644f8
 # ╟─b4308f9a-43ef-11eb-244f-75e1e3b1851a
 # ╟─9eb214ce-43dc-11eb-29a4-2712e312f969
@@ -333,6 +353,9 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╠═1cc75e60-4454-11eb-0cbf-bf4345f74eb5
 # ╠═1ccb3f4e-4454-11eb-2454-4378dd84a438
 # ╠═1ccbe7e6-4454-11eb-3d5f-13c7f8ed6c89
+# ╠═ac52378a-4468-11eb-17ef-530a18afa526
+# ╠═295801a8-4469-11eb-0c9d-f149f78e3aa3
+# ╠═00b3aac6-4468-11eb-073d-9b52308d3240
 # ╠═280641c2-4460-11eb-2393-d54e120ff678
 # ╠═1cde325c-4454-11eb-33dc-afd84672f28d
 # ╠═93f5cde8-4466-11eb-387f-6147108da4d9
