@@ -303,7 +303,7 @@ end
 
 # ╔═╡ 48ed7d74-43e3-11eb-0976-c52b73747a52
 begin
-	overall_samples = initial_samples + ike_samples + ikze_samples
+	overall_samples = initial_samples + ike_samples + ikze_samples .+ (yearly_unused * years_to_retirement)
 	wealth_plot(overall_samples, title="Wartość majątku na początku emerytury")
 end
 
