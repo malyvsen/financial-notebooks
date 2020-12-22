@@ -31,7 +31,7 @@ Na celowniku: godna emerytura."
 md"Mamy $(@bind num_people NumberField(1:5, default=2)) osoby wspólnie oszczędzające na emeryturę."
 
 # ╔═╡ 0dda613c-4395-11eb-2c8e-ff08529d84e8
-md"Planujecie przejść na emeryturę za $(@bind years_to_retirement NumberField(0:50, default=20)) lat, a na emeryturze spodziewacie się przeżyć $(@bind years_after_retirement NumberField(0:50, default=20)) lat."
+md"Planujecie przejść na emeryturę za $(@bind years_to_retirement NumberField(0:50, default=20)) lat, a na emeryturze spodziewacie się przeżyć $(@bind years_after_retirement NumberField(0:100, default=20)) lat."
 
 # ╔═╡ 5e700f84-4395-11eb-0728-f9c7a615f399
 md"Obecnie macie zaoszczędzonych PLN $(@bind initial_investment NumberField(0:1e7, default=Int(200e3)))."
@@ -52,7 +52,7 @@ md"Średnia roczna stopa zwrotu globalnego rynku, wynosi $(@bind market_real_ret
 
 # ╔═╡ fb8df1d8-43d0-11eb-1cd0-655f5240b570
 md"""
-Z kolei obligacje skarbowe zwracają marżę $(@bind bond_premium_percent NumberField(0:0.1:10, default=1))% powyżej inflacji.
+Z kolei obligacje skarbowe zwracają marżę $(@bind bond_premium_percent NumberField(0:0.01:10, default=1))% powyżej inflacji.
 """
 
 # ╔═╡ 8cfda320-43e5-11eb-1d02-d5d21784a008
