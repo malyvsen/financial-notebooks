@@ -18,6 +18,7 @@ begin
 	using Distributions
 	using Interpolations
 	using Statistics
+	using StatsBase
 	using StatsPlots
 	gr(fmt=:png) # forces sensible plot size
 	using PlutoUI
@@ -122,6 +123,12 @@ md"## Technikalia"
 # ╔═╡ 1cc75e60-4454-11eb-0cbf-bf4345f74eb5
 num_samples = 4096
 
+# ╔═╡ 2fdc63aa-44af-11eb-388d-43a2ca018a64
+extrema(ecdf([1, 2, 3]))
+
+# ╔═╡ 7a4ce2d4-44af-11eb-1858-810014c125bf
+minimum([1, 2, 3])
+
 # ╔═╡ 1ccbe7e6-4454-11eb-3d5f-13c7f8ed6c89
 display_money(money) =
 if money < 1e3
@@ -186,6 +193,18 @@ end
 begin
 	pit_bracket_borders = current_pit_bracket_border .* inflation_progress
 	md"Zakładamy, że stawka graniczna PIT będzie również zwiększać się wraz z inflacją, aż do PLN $(display_money(last(pit_bracket_borders))), gdy będziesz przechodzić na emeryturę."
+end
+
+# ╔═╡ 1ccb3f4e-4454-11eb-2454-4378dd84a438
+function wealth_plot(samples; title)
+	real_samples = samples / inflation_at_retirement
+	real_cdf = ecdf((real_samples)[:, 1])
+	nominal_cdf = ecdf((samples)[:, 1])
+	
+	x_axis = LinRange(0, quantile(samples[:, 1], 0.99) * 1.1, 256)
+	plot(title=title, xformatter=display_money)
+	plot!(x_axis, real_cdf.(x_axis), label="Realna")
+	plot!(x_axis, nominal_cdf.(x_axis), label="Nominalna")
 end
 
 # ╔═╡ c12bae28-449c-11eb-227c-03c3adef27c8
@@ -259,14 +278,6 @@ function mle_returns_distribution(samples)
 	else
 		truncated(fit_mle(Laplace, samples), 0, 2 * mean(samples))
 	end
-end
-
-# ╔═╡ 1ccb3f4e-4454-11eb-2454-4378dd84a438
-function wealth_plot(samples; title)
-	wealth_distribution = mle_returns_distribution(samples)
-	plot(title=title, xformatter=display_money)
-	plot!(wealth_distribution / inflation_at_retirement, func=cdf, label="Realna")
-	plot!(wealth_distribution, func=cdf, label="Nominalna")
 end
 
 # ╔═╡ 1d1ad75c-4454-11eb-1e25-f9bf9054ee12
@@ -411,6 +422,8 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╟─d70da254-44ac-11eb-1db0-0f242bcc37ae
 # ╟─27cd099c-4394-11eb-0cc0-eb21f9c082c5
 # ╠═1cc75e60-4454-11eb-0cbf-bf4345f74eb5
+# ╠═2fdc63aa-44af-11eb-388d-43a2ca018a64
+# ╠═7a4ce2d4-44af-11eb-1858-810014c125bf
 # ╠═1ccb3f4e-4454-11eb-2454-4378dd84a438
 # ╠═1ccbe7e6-4454-11eb-3d5f-13c7f8ed6c89
 # ╠═c12bae28-449c-11eb-227c-03c3adef27c8
