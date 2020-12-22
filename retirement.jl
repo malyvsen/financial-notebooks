@@ -223,8 +223,7 @@ returns_distribution(mean, stddev) = truncated(Laplace(mean, stddev / sqrt(2)), 
 begin
 	market_multiplier_yearly = (1 + market_real_return_percent / 100) * (1 + yearly_inflation_percent / 100)
 	market_yearly_distribution = returns_distribution(market_multiplier_yearly, market_stddev_percent / 100)
-	plot(title="Rozkład wzrostu rynku")
-	plot!(market_yearly_distribution, func=cdf, label="Roczny")
+	md"Bez korekty na inflację, roczny wzrost rynku wynosi $(market_multiplier_yearly)."
 end
 
 # ╔═╡ 1cea9d4e-4454-11eb-3e99-b1183d499d25
@@ -233,6 +232,13 @@ function sample_etfs(incomes)
 		incomes=incomes,
 		return_samples=rand(market_yearly_distribution, (num_samples, length(incomes)))
 	)
+end
+
+# ╔═╡ 7da0d500-4467-11eb-36a3-ad3a82e22318
+begin
+	plot(title="Rozkład wzrostu rynku")
+	plot!(market_yearly_distribution, func=cdf, label="Roczny")
+	plot!(mle_returns_distribution(sample_etfs(vcat([1], fill(0, years_to_retirement - 1)))), func=cdf, label="Do emerytury")
 end
 
 # ╔═╡ bdf9d4a4-4461-11eb-2705-f10e85e344c7
@@ -302,6 +308,7 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╟─8c8a52d2-4398-11eb-0549-493b3968b3b7
 # ╟─7711e8d8-43d0-11eb-01fd-8faca7a26c5d
 # ╟─863a0768-43d1-11eb-223d-e5fcd18b9417
+# ╟─7da0d500-4467-11eb-36a3-ad3a82e22318
 # ╟─fb8df1d8-43d0-11eb-1cd0-655f5240b570
 # ╟─8cfda320-43e5-11eb-1d02-d5d21784a008
 # ╟─2896e0a6-4398-11eb-07dd-e5c27ac014a7
