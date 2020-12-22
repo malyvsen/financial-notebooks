@@ -46,7 +46,7 @@ md"""
 """
 
 # ╔═╡ cfc9b566-4397-11eb-231c-37c0da3c3da2
-md"Docelowa wartość inflacji NBP wynosi $(@bind yearly_inflation_percent NumberField(0:0.1:10, default=2.5))%."
+md"Docelowa wartość inflacji NBP wynosi $(@bind yearly_inflation_percent NumberField(0:0.1:10, default=2.5))%. Zakładamy, że wszystkie kwoty skalują się wraz z inflacją."
 
 # ╔═╡ 7711e8d8-43d0-11eb-01fd-8faca7a26c5d
 md"Średnia roczna stopa zwrotu globalnego rynku wynosi $(@bind market_real_return_percent NumberField(0:0.1:100, default=4.3))% po korekcie na inflację, a odchylenie standardowe wynosi $(@bind market_stddev_percent NumberField(0:0.1:100, default=15))%."
@@ -63,7 +63,7 @@ begin
 end
 
 # ╔═╡ 2896e0a6-4398-11eb-07dd-e5c27ac014a7
-md"Stawka PIT wynosi $(@bind pit_first_percent NumberField(0:0.1:100, default=17))% w pierwszym progu i $(@bind pit_second_percent NumberField(0:0.1:100, default=32))% w drugim. Kwota graniczna to PLN $(@bind pit_bracket_border NumberField(0:1e6, default=85528))."
+md"Stawka PIT wynosi $(@bind pit_first_percent NumberField(0:0.1:100, default=17))% w pierwszym progu i $(@bind pit_second_percent NumberField(0:0.1:100, default=32))% w drugim. Kwota graniczna to PLN $(@bind current_pit_bracket_border NumberField(0:1e6, default=85528))."
 
 # ╔═╡ d7496936-4468-11eb-0247-579dfe77adb0
 md"""
@@ -87,7 +87,7 @@ IKE to rachunek oszczędnościowy, który pozwala nie płacić podatku Belki, je
 # ╔═╡ 2fee2ecc-43de-11eb-0168-2943ab290ff0
 begin
 	md"""
-W przeciętnym roku zamierzasz wpłacać na swoje IKE PLN $(@bind ike_yearly NumberField(0:0.01:ike_yearly_limit, default=1000)).
+W przeciętnym roku zamierzasz wpłacać na swoje IKE PLN $(@bind current_ike_yearly NumberField(0:0.01:ike_yearly_limit, default=1000)).
 	"""
 end
 
@@ -103,7 +103,7 @@ IKZE to rachunek oszczędnościowy, który pozwala odliczyć kwotę wpłaconą n
 # ╔═╡ b3a46636-43df-11eb-233b-3d178928ffe6
 begin
 	md"""
-W przeciętnym roku zamierzasz wpłacać na swoje IKZE PLN $(@bind ikze_yearly NumberField(0:0.01:ikze_yearly_limit, default=1000)).
+W przeciętnym roku zamierzasz wpłacać na swoje IKZE PLN $(@bind current_ikze_yearly NumberField(0:0.01:ikze_yearly_limit, default=1000)).
 	"""
 end
 
@@ -137,9 +137,9 @@ end
 if monthly_cost > monthly_revenue
 	md"#### 🚨 Miesięczne wydatki przekraczają miesięczne dochody. Mam nadzieję, że to nieprawda?"
 else
-	yearly_revenue = monthly_revenue * 12
-	yearly_cost = monthly_cost * 12
-	md"To oznacza, że wydajesz $(Int(round(monthly_cost / monthly_revenue * 100)))% swoich zarobków w przeciętnym miesiącu. Te wartości przeliczają się na roczny przychód w wysokości PLN $(display_money(yearly_revenue)) i roczne wydatki w wysokości PLN $(display_money(yearly_cost))."
+	current_yearly_revenue = monthly_revenue * 12
+	current_yearly_cost = monthly_cost * 12
+	md"To oznacza, że wydajesz $(Int(round(monthly_cost / monthly_revenue * 100)))% swoich zarobków w przeciętnym miesiącu. Te wartości przeliczają się na roczny przychód w wysokości PLN $(display_money(current_yearly_revenue)) i roczne wydatki w wysokości PLN $(display_money(current_yearly_cost))."
 end
 
 # ╔═╡ 48c32c58-44a0-11eb-3cf4-6d11bebf21e0
@@ -172,8 +172,17 @@ end
 
 # ╔═╡ 8c8a52d2-4398-11eb-0549-493b3968b3b7
 begin
-	inflation_at_retirement = (1 + yearly_inflation_percent / 100) .^ years_to_retirement
-	md"To oznacza, że za $(years_to_retirement) lat będziesz potrzebować PLN $(display_money(monthly_cost * inflation_at_retirement)), aby utrzymać obecny styl życia, ponieważ PLN 1 będzie wart tyle, co PLN $(round(1 / inflation_at_retirement, digits=2)) obecnie."
+	inflation_progress = (1 + yearly_inflation_percent / 100) .^ (0:years_to_retirement - 1)
+	inflation_at_retirement = last(inflation_progress)
+	yearly_revenues = current_yearly_revenue .* inflation_progress
+	yearly_costs = current_yearly_cost .* inflation_progress
+	md"To oznacza, że za $(years_to_retirement) lat będziesz potrzebować PLN $(display_money(monthly_cost * inflation_at_retirement)), aby utrzymać obecny styl życia, ponieważ PLN 1 będzie wart tyle, co PLN $(round(1 / inflation_at_retirement, digits=2)) obecnie. Zakładamy, że Twoje zarobki również będą skalować się z inflacją, czyli tuż przed emeryturą będziesz zarabiać PLN $(display_money(monthly_revenue * inflation_at_retirement))."
+end
+
+# ╔═╡ c6e26108-44a7-11eb-1350-a169fbac1b06
+begin
+	pit_bracket_borders = current_pit_bracket_border .* inflation_progress
+	md"Zakładamy, że stawka graniczna PIT będzie również zwiększać się wraz z inflacją, aż do PLN $(display_money(last(pit_bracket_borders))), gdy będziesz przechodzić na emeryturę."
 end
 
 # ╔═╡ c12bae28-449c-11eb-227c-03c3adef27c8
@@ -185,43 +194,29 @@ begin
 end
 
 # ╔═╡ 00b3aac6-4468-11eb-073d-9b52308d3240
-function apply_pit(income)
-	first_bracket_tax = min(income, pit_bracket_border) * pit_first_percent / 100
-	second_bracket_tax = max(income - pit_bracket_border, 0) * pit_second_percent / 100
-	return income - first_bracket_tax - second_bracket_tax
+function apply_pit(incomes)
+	first_bracket_tax = min.(incomes, pit_bracket_borders) * pit_first_percent / 100
+	second_bracket_tax = max.(incomes - pit_bracket_borders, 0) * pit_second_percent / 100
+	return incomes - first_bracket_tax - second_bracket_tax
 end
 
 # ╔═╡ bd353520-4396-11eb-1250-2f5bbbca4582
 begin
-	current_yearly_tax = yearly_revenue - apply_pit(yearly_revenue)
-	current_yearly_profit = apply_pit(yearly_revenue) - yearly_cost
-	tax_bracket_message = if yearly_revenue > pit_bracket_border "wpadasz" else "nie wpadasz" end
+	current_post_pit = first(apply_pit(vcat(current_yearly_revenue, fill(0, years_to_retirement - 1))))
+	current_yearly_tax = current_yearly_revenue - current_post_pit
+	current_yearly_profit = current_post_pit - current_yearly_cost
+	tax_bracket_message = if current_yearly_revenue > current_pit_bracket_border "wpadasz" else "nie wpadasz" end
 	md"To oznacza, że $(tax_bracket_message) w drugi próg podatkowy, i co roku płacisz PIT w wysokości PLN $(display_money(current_yearly_tax)), co pozostawia PLN $(display_money(current_yearly_profit)) w formie oszczędności."
 end
 
-# ╔═╡ 002bc00c-43e1-11eb-0dad-c9e4ca4ca2f5
-begin
-	post_ikze_revenue = yearly_revenue - ikze_yearly
-	post_ikze_yearly_tax = post_ikze_revenue - apply_pit(post_ikze_revenue)
-	post_ikze_yearly_profit = apply_pit(yearly_revenue - ikze_yearly) - yearly_cost
-	md"To zmniejszy Twój roczny PIT o PLN $(display_money(current_yearly_tax - post_ikze_yearly_tax)), do wartości PLN $(display_money(post_ikze_yearly_tax))."
-end
-
-# ╔═╡ eaa4fd02-43e0-11eb-1fe6-03f1d6b2bffb
-begin
-	yearly_unused = post_ikze_yearly_profit - ike_yearly - ikze_yearly
-	if yearly_unused < 0
-		md"#### 🚨 Łączna kwota wpłacana na IKE i IKZE przekracza kwotę przychodu - PLN $(Int(round(post_ikze_yearly_profit))). Zmniejsz kwotę wpłacaną na te rachunki o PLN $(Int(round(-yearly_unused)))."
-	else
-		md"Po wpłacie na IKE oraz IKZE pozostaje Ci co roku PLN $(Int(round(yearly_unused))), które zostawiasz na koncie w banku."
-	end
-end
-
 # ╔═╡ ac52378a-4468-11eb-17ef-530a18afa526
-apply_pit(10e3)
+apply_pit(vcat(1e3, fill(0, years_to_retirement - 1)))
 
 # ╔═╡ 295801a8-4469-11eb-0c9d-f149f78e3aa3
-apply_pit(1e10)
+apply_pit(vcat(1e6, fill(0, years_to_retirement - 1)))
+
+# ╔═╡ 5b5a3b60-44aa-11eb-15f9-77f12d39b6ab
+apply_pit(vcat(fill(0, years_to_retirement - 1), 1e6))
 
 # ╔═╡ 1cde325c-4454-11eb-33dc-afd84672f28d
 function apply_capital_gains_tax(; incomes, samples)
@@ -278,7 +273,7 @@ returns_distribution(mean, stddev) = truncated(Laplace(mean, stddev / sqrt(2)), 
 begin
 	market_multiplier_yearly = (1 + market_real_return_percent / 100) * (1 + yearly_inflation_percent / 100)
 	market_yearly_distribution = returns_distribution(market_multiplier_yearly, market_stddev_percent / 100)
-	md"Bez korekty na inflację, roczny wzrost rynku wynosi $(market_multiplier_yearly)."
+	md"Bez korekty na inflację, średni roczny wzrost rynku wynosi więc $(market_multiplier_yearly)."
 end
 
 # ╔═╡ 1cea9d4e-4454-11eb-3e99-b1183d499d25
@@ -318,7 +313,7 @@ end
 
 # ╔═╡ b4308f9a-43ef-11eb-244f-75e1e3b1851a
 begin
-	ike_incomes = fill(ike_yearly, years_to_retirement)
+	ike_incomes = current_ike_yearly * inflation_progress
 	ike_samples = sample_portfolio(
 		incomes=ike_incomes,
 		etf_allocation=ike_etf_allocation
@@ -328,12 +323,30 @@ end
 
 # ╔═╡ 5816674a-43f0-11eb-34f6-09a53fc611fd
 begin
-	ikze_incomes = fill(ikze_yearly, years_to_retirement)
+	ikze_incomes = current_ikze_yearly .* inflation_progress
 	ikze_samples = sample_portfolio(
 		incomes=ikze_incomes,
 		etf_allocation=ikze_etf_allocation
 	) .* (1 - ikze_tax_percent / 100)
 	wealth_plot(ikze_samples, title="Wartość IKZE na początku emerytury")
+end
+
+# ╔═╡ 002bc00c-43e1-11eb-0dad-c9e4ca4ca2f5
+begin
+	post_ikze_revenues = yearly_revenues - ikze_incomes
+	post_ikze_yearly_taxes = post_ikze_revenues - apply_pit(post_ikze_revenues)
+	post_ikze_yearly_profits = apply_pit(yearly_revenues - ikze_incomes) - yearly_costs
+	md"To zmniejszy Twój roczny PIT o PLN $(display_money(current_yearly_tax - first(post_ikze_yearly_taxes))), do wartości PLN $(display_money(first(post_ikze_yearly_taxes)))."
+end
+
+# ╔═╡ eaa4fd02-43e0-11eb-1fe6-03f1d6b2bffb
+begin
+	yearly_unused = first(post_ikze_yearly_profits - ike_incomes - ikze_incomes)
+	if yearly_unused < 0
+		md"#### 🚨 Łączna kwota wpłacana na IKE i IKZE przekracza kwotę przychodu - PLN $(Int(round(post_ikze_yearly_profit))). Zmniejsz kwotę wpłacaną na te rachunki o PLN $(Int(round(-yearly_unused)))."
+	else
+		md"Po wpłacie na IKE oraz IKZE pozostaje Ci co roku PLN $(Int(round(yearly_unused))), które zostawiasz na koncie w banku."
+	end
 end
 
 # ╔═╡ 48ed7d74-43e3-11eb-0976-c52b73747a52
@@ -370,6 +383,7 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╟─8cfda320-43e5-11eb-1d02-d5d21784a008
 # ╟─2896e0a6-4398-11eb-07dd-e5c27ac014a7
 # ╟─bd353520-4396-11eb-1250-2f5bbbca4582
+# ╟─c6e26108-44a7-11eb-1350-a169fbac1b06
 # ╟─d7496936-4468-11eb-0247-579dfe77adb0
 # ╟─3a29e51c-4397-11eb-35e6-7bef72a87db9
 # ╟─3ca08438-43e0-11eb-004f-17a75401c481
@@ -395,6 +409,7 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╠═48c32c58-44a0-11eb-3cf4-6d11bebf21e0
 # ╠═ac52378a-4468-11eb-17ef-530a18afa526
 # ╠═295801a8-4469-11eb-0c9d-f149f78e3aa3
+# ╠═5b5a3b60-44aa-11eb-15f9-77f12d39b6ab
 # ╠═00b3aac6-4468-11eb-073d-9b52308d3240
 # ╠═280641c2-4460-11eb-2393-d54e120ff678
 # ╠═1cde325c-4454-11eb-33dc-afd84672f28d
