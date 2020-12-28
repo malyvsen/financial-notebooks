@@ -343,15 +343,15 @@ end
 begin
 	post_ikze_revenues = yearly_revenues - ikze_incomes
 	post_ikze_yearly_taxes = post_ikze_revenues - apply_pit(post_ikze_revenues)
-	post_ikze_yearly_profits = apply_pit(yearly_revenues - ikze_incomes) - yearly_costs
+	post_ikze_yearly_profits = apply_pit(post_ikze_revenues) - yearly_costs
 	md"To zmniejszy Twój roczny PIT o PLN $(display_money(current_yearly_tax - first(post_ikze_yearly_taxes))), do wartości PLN $(display_money(first(post_ikze_yearly_taxes)))."
 end
 
 # ╔═╡ eaa4fd02-43e0-11eb-1fe6-03f1d6b2bffb
 begin
-	current_yearly_unused = first(post_ikze_yearly_profits - ike_incomes - ikze_incomes)
+	current_yearly_unused = first(post_ikze_yearly_profits - ike_incomes)
 	if current_yearly_unused < 0
-		md"#### 🚨 Łączna kwota wpłacana na IKE i IKZE przekracza kwotę przychodu - PLN $(Int(round(post_ikze_yearly_profit))). Zmniejsz kwotę wpłacaną na te rachunki o PLN $(Int(round(-current_yearly_unused)))."
+		md"#### 🚨 Łączna kwota wpłacana na IKE i IKZE przekracza kwotę przychodu - PLN $(Int(round(first(post_ikze_yearly_profits)))). Zmniejsz kwotę wpłacaną na te rachunki o PLN $(Int(round(-current_yearly_unused)))."
 	else
 		md"Po wpłacie na IKE oraz IKZE pozostaje Ci co roku PLN $(Int(round(current_yearly_unused))), które zostawiasz na koncie w banku."
 	end
