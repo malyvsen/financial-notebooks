@@ -123,12 +123,6 @@ md"## Technikalia"
 # ╔═╡ 1cc75e60-4454-11eb-0cbf-bf4345f74eb5
 num_samples = 4096
 
-# ╔═╡ 2fdc63aa-44af-11eb-388d-43a2ca018a64
-extrema(ecdf([1, 2, 3]))
-
-# ╔═╡ 7a4ce2d4-44af-11eb-1858-810014c125bf
-minimum([1, 2, 3])
-
 # ╔═╡ 1ccbe7e6-4454-11eb-3d5f-13c7f8ed6c89
 display_money(money) =
 if money < 1e3
@@ -355,17 +349,17 @@ end
 
 # ╔═╡ eaa4fd02-43e0-11eb-1fe6-03f1d6b2bffb
 begin
-	yearly_unused = first(post_ikze_yearly_profits - ike_incomes - ikze_incomes)
-	if yearly_unused < 0
-		md"#### 🚨 Łączna kwota wpłacana na IKE i IKZE przekracza kwotę przychodu - PLN $(Int(round(post_ikze_yearly_profit))). Zmniejsz kwotę wpłacaną na te rachunki o PLN $(Int(round(-yearly_unused)))."
+	current_yearly_unused = first(post_ikze_yearly_profits - ike_incomes - ikze_incomes)
+	if current_yearly_unused < 0
+		md"#### 🚨 Łączna kwota wpłacana na IKE i IKZE przekracza kwotę przychodu - PLN $(Int(round(post_ikze_yearly_profit))). Zmniejsz kwotę wpłacaną na te rachunki o PLN $(Int(round(-current_yearly_unused)))."
 	else
-		md"Po wpłacie na IKE oraz IKZE pozostaje Ci co roku PLN $(Int(round(yearly_unused))), które zostawiasz na koncie w banku."
+		md"Po wpłacie na IKE oraz IKZE pozostaje Ci co roku PLN $(Int(round(current_yearly_unused))), które zostawiasz na koncie w banku."
 	end
 end
 
 # ╔═╡ 48ed7d74-43e3-11eb-0976-c52b73747a52
 begin
-	overall_samples = initial_samples + ike_samples + ikze_samples .+ (yearly_unused * years_to_retirement)
+	overall_samples = initial_samples + ike_samples + ikze_samples .+ (current_yearly_unused * years_to_retirement)
 	wealth_plot(overall_samples, title="Wartość majątku na początku emerytury")
 end
 
@@ -422,8 +416,6 @@ sample_portfolio(incomes=[0, 1], etf_allocation=0.01)
 # ╟─d70da254-44ac-11eb-1db0-0f242bcc37ae
 # ╟─27cd099c-4394-11eb-0cc0-eb21f9c082c5
 # ╠═1cc75e60-4454-11eb-0cbf-bf4345f74eb5
-# ╠═2fdc63aa-44af-11eb-388d-43a2ca018a64
-# ╠═7a4ce2d4-44af-11eb-1858-810014c125bf
 # ╠═1ccb3f4e-4454-11eb-2454-4378dd84a438
 # ╠═1ccbe7e6-4454-11eb-3d5f-13c7f8ed6c89
 # ╠═c12bae28-449c-11eb-227c-03c3adef27c8
